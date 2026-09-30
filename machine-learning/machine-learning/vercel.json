@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/api/evasao/:rota*", "destination": "/api/evasao?__rota=:rota*" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    }
+  ]
+}

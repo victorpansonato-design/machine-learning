@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+coverage/
+.vercel/
+.DS_Store
+*.log
+.vite/
+
+# Segredos: o token da API vive SÓ em .env.local (ou no painel do servidor).
+.env*
+!.env.example

@@ -1,0 +1,56 @@
+/* ==========================================================================
+   A folha do relatório na impressão ("Imprimir ou salvar em PDF")
+   --------------------------------------------------------------------------
+   Na tela, a folha é um card sobre o canvas. No papel, ela É a página: sem
+   fundo, sem raio, sem margem própria (o `@page` cuida disso), e a barra de
+   ações some. O cabeçalho de cada tabela se repete em toda página, e uma
+   linha nunca é partida ao meio.
+   ========================================================================== */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm 11mm 14mm;
+  }
+
+  html,
+  body,
+  .relatorio-fundo {
+    background: #fff !important;
+  }
+
+  .relatorio-fundo {
+    padding: 0 !important;
+  }
+
+  .relatorio-folha {
+    max-width: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .relatorio-folha thead {
+    display: table-header-group;
+  }
+
+  /* O navegador repete o <tfoot> em toda página; um "Total" no meio da
+     tabela seria lido como total parcial. Ele sai uma vez, no fim. */
+  .relatorio-folha tfoot {
+    display: table-row-group;
+  }
+
+  .relatorio-folha tr,
+  .relatorio-folha .relatorio-bloco {
+    break-inside: avoid;
+  }
+
+  .relatorio-folha h2 {
+    break-after: avoid;
+  }
+
+  /* Cor de faixa e fundo de cabeçalho saem impressos, não em cinza. */
+  .relatorio-folha * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

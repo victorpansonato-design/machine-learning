@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Risco de Evasão · UniAnchieta</title>
+    <meta
+      name="description"
+      content="Monitoramento da machine learning de risco de evasão da Graduação Presencial da UniAnchieta: fila por faixa, cursos e consulta por RA."
+    />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c0d0f" media="(prefers-color-scheme: dark)" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Aplica o tema salvo antes da primeira pintura, para não piscar a paleta
+      // errada. A chave TEM de ser a mesma de src/lib/theme.ts (THEME_KEY). O
+      // valor é gravado em JSON, então a entrada crua é '"dark"', com aspas.
+      (function () {
+        try {
+          var stored = localStorage.getItem('ml.v1.theme');
+          // Claro é o padrão. Escuro é opt-in, nunca herdado do sistema.
+          var theme = stored === 'dark' || stored === '"dark"' ? 'dark' : 'light';
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {
+          /* storage indisponível — cai no claro */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

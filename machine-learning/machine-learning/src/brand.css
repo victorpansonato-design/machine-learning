@@ -1,0 +1,16 @@
+/* ==========================================================================
+   Assinatura do Grupo Anchieta: o traço amarelo
+   --------------------------------------------------------------------------
+   Um traço curto sob títulos (página, relatório, planilha) — a mesma
+   assinatura do Customer Experience. É DECORAÇÃO DE TÍTULO e só isso: nunca
+   entra em gráfico, badge ou barra, onde seria confundido com o âmbar da faixa
+   Média. Aditivo aos tokens de `index.css` (que não são tocados).
+   ========================================================================== */
+
+:root {
+  --brand-gold: #f2b200;
+}
+
+.dark {
+  --brand-gold: #d9a520;
+}

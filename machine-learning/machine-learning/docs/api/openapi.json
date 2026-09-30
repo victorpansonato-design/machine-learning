@@ -1,0 +1,859 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Risco de evasão -- Graduação Presencial",
+    "version": "1.0",
+    "description": "Consulta a fila diária gravada pelo job em ANC_ML_RISCO_PRESENCIAL. Faixas pela posição na fila do dia: CRITICA = 20% do topo da ALTA (~2% da base), ALTA = até 10%, MEDIA = até 20%. Aluno fora da tabela = sem risco. Confira sempre fila_atualizada: false significa que a fila não é a mais recente esperada (o job roda segunda e quinta). A faixa é uma estimativa (cerca de 4 em cada 10 da CRITICA evadem) e nunca deve ser comunicada ao próprio aluno."
+  },
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "/fila/saude": {
+      "get": {
+        "operationId": "saude",
+        "summary": "O banco responde e se a fila mais recente é a de hoje",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Saude"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "token ausente ou inválido (só quando EVASAO_API_TOKEN está definida)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "método não aceito pela rota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "parâmetro inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "banco indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alunos/listar": {
+      "get": {
+        "operationId": "listar_alunos",
+        "summary": "Alunos em risco, com filtro por curso e faixa",
+        "parameters": [
+          {
+            "name": "curso",
+            "in": "query",
+            "required": false,
+            "description": "código (258) ou trecho do nome (engenharia, direito); acento e maiúscula não importam",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "faixa",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "description": "uma ou mais: CRITICA, ALTA, MEDIA (repita o parâmetro ou separe por vírgula)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "CRITICA",
+                  "ALTA",
+                  "MEDIA"
+                ]
+              }
+            }
+          },
+          {
+            "name": "data",
+            "in": "query",
+            "required": false,
+            "description": "DT_CORTE no formato AAAA-MM-DD (padrão: a fila mais recente)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaAlunos"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "token ausente ou inválido (só quando EVASAO_API_TOKEN está definida)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "não há fila gravada para a data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "método não aceito pela rota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "parâmetro inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "banco indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alunos/consultar": {
+      "get": {
+        "operationId": "consultar_aluno",
+        "summary": "Situação de um aluno na fila mais recente e nas anteriores",
+        "parameters": [
+          {
+            "name": "ra",
+            "in": "query",
+            "required": true,
+            "description": "RA do aluno",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dias",
+            "in": "query",
+            "required": false,
+            "description": "quantas filas mais recentes olhar",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 366,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricoAluno"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "token ausente ou inválido (só quando EVASAO_API_TOKEN está definida)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RA não existe no Lyceum",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "método não aceito pela rota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "parâmetro inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "banco indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fila/resumo": {
+      "get": {
+        "operationId": "resumo_por_curso",
+        "summary": "Contagem por curso e faixa",
+        "parameters": [
+          {
+            "name": "curso",
+            "in": "query",
+            "required": false,
+            "description": "código (258) ou trecho do nome (engenharia, direito); acento e maiúscula não importam",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "data",
+            "in": "query",
+            "required": false,
+            "description": "DT_CORTE no formato AAAA-MM-DD (padrão: a fila mais recente)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResumoCurso"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "token ausente ou inválido (só quando EVASAO_API_TOKEN está definida)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "não há fila gravada para a data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "método não aceito pela rota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "parâmetro inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "banco indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fila/datas": {
+      "get": {
+        "operationId": "listar_datas",
+        "summary": "Filas gravadas, da mais recente para a mais antiga",
+        "parameters": [
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 366,
+              "default": 60
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DataCorte"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "token ausente ou inválido (só quando EVASAO_API_TOKEN está definida)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "método não aceito pela rota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "parâmetro inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "banco indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disparos/enviar": {
+      "post": {
+        "operationId": "enviar_disparo",
+        "summary": "Envia a mensagem de triagem (push + e-mail) aos alunos Ativos de uma faixa",
+        "description": "Sem confirmar=true só SIMULA (devolve os RAs e o payload). Cada aluno recebe no máximo uma vez por fila (DT_CORTE): chamar de novo só manda para quem ainda não recebeu. Nunca chame com confirmar=true sem pedido explícito da equipe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "faixa": {
+                    "type": "string",
+                    "enum": [
+                      "CRITICA",
+                      "ALTA",
+                      "MEDIA"
+                    ]
+                  },
+                  "data": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "DT_CORTE (padrão: a fila mais recente)"
+                  },
+                  "confirmar": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "true = envia de verdade; ausente = simulação"
+                  },
+                  "ras_teste": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "envia só para estes RAs, em vez da fila (teste)"
+                  }
+                },
+                "required": [
+                  "faixa"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "simulação, ou todos os lotes enviados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "207": {
+            "description": "parte dos lotes falhou",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "token ausente ou inválido (só quando EVASAO_API_TOKEN está definida)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "método não aceito pela rota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "fila desatualizada (informe data para enviar mesmo assim), ou outro disparo da mesma fila em andamento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "parâmetro inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "o serviço de disparos recusou todos os lotes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "banco indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "valor de EVASAO_API_TOKEN"
+      }
+    },
+    "schemas": {
+      "Aluno": {
+        "type": "object",
+        "properties": {
+          "dt_corte": {
+            "type": "string",
+            "format": "date"
+          },
+          "posicao": {
+            "type": "integer",
+            "description": "posição na fila do dia (1 = maior risco), contando TODOS os cursos"
+          },
+          "aluno": {
+            "type": "string",
+            "description": "RA"
+          },
+          "chance_evasao": {
+            "type": "string",
+            "enum": [
+              "CRITICA",
+              "ALTA",
+              "MEDIA"
+            ]
+          },
+          "curso": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nome_curso": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "dt_corte",
+          "posicao",
+          "aluno",
+          "chance_evasao",
+          "curso",
+          "nome_curso"
+        ]
+      },
+      "PaginaAlunos": {
+        "type": "object",
+        "properties": {
+          "dt_corte": {
+            "type": "string",
+            "format": "date"
+          },
+          "fila_atualizada": {
+            "type": "boolean",
+            "description": "false = não é a fila mais recente esperada (job atrasado ou data antiga pedida)"
+          },
+          "total": {
+            "type": "integer",
+            "description": "quantos atendem o filtro (sem paginação)"
+          },
+          "pagina": {
+            "type": "integer"
+          },
+          "limite": {
+            "type": "integer"
+          },
+          "alunos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Aluno"
+            }
+          }
+        },
+        "required": [
+          "dt_corte",
+          "fila_atualizada",
+          "total",
+          "pagina",
+          "limite",
+          "alunos"
+        ]
+      },
+      "HistoricoAluno": {
+        "type": "object",
+        "properties": {
+          "aluno": {
+            "type": "string"
+          },
+          "sit_aluno": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "situação ATUAL no Lyceum (Ativo, Cancelado...) -- pode ter mudado depois da fila"
+          },
+          "curso": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nome_curso": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ultima_fila": {
+            "type": "string",
+            "format": "date"
+          },
+          "fila_atualizada": {
+            "type": "boolean"
+          },
+          "faixa_ultima_fila": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "CRITICA",
+              "ALTA",
+              "MEDIA",
+              null
+            ],
+            "description": "null = fora das faixas na fila mais recente"
+          },
+          "leitura": {
+            "type": "string",
+            "description": "o resultado em uma frase"
+          },
+          "historico": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Aluno"
+            },
+            "description": "filas recentes em que apareceu, da mais recente para a mais antiga"
+          }
+        },
+        "required": [
+          "aluno",
+          "sit_aluno",
+          "curso",
+          "nome_curso",
+          "ultima_fila",
+          "fila_atualizada",
+          "faixa_ultima_fila",
+          "leitura",
+          "historico"
+        ]
+      },
+      "ResumoCurso": {
+        "type": "object",
+        "properties": {
+          "curso": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nome_curso": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "critica": {
+            "type": "integer"
+          },
+          "alta": {
+            "type": "integer"
+          },
+          "media": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "curso",
+          "nome_curso",
+          "critica",
+          "alta",
+          "media",
+          "total"
+        ]
+      },
+      "DataCorte": {
+        "type": "object",
+        "properties": {
+          "dt_corte": {
+            "type": "string",
+            "format": "date"
+          },
+          "critica": {
+            "type": "integer"
+          },
+          "alta": {
+            "type": "integer"
+          },
+          "media": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dt_corte",
+          "critica",
+          "alta",
+          "media",
+          "total"
+        ]
+      },
+      "Saude": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "ultima_fila": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "fila_esperada": {
+            "type": "string",
+            "format": "date"
+          },
+          "fila_atualizada": {
+            "type": "boolean"
+          },
+          "dias_de_atraso": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "dias_gravados": {
+            "type": "integer"
+          }
+        }
+      },
+      "Erro": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/api_evasao_grad_presencial/api"
+    }
+  ]
+}
